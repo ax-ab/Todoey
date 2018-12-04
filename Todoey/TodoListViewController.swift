@@ -10,7 +10,7 @@ import UIKit
 
 class TodoListViewController: UITableViewController {
 
-    let itemArray = ["Find Mike","Buy Eggos","Destroy Demogogorgon"]
+    var itemArray = ["Find Mike","Buy Eggos","Destroy Demogogorgon"]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -51,6 +51,47 @@ class TodoListViewController: UITableViewController {
         
     }
 
+    //MARK: Add new items
+    
+    
+    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+        
+        var textField = UITextField()
+        
+        let alert = UIAlertController(title: "Add New Todoey item", message: "Enter the name of the ToDo", preferredStyle: .alert)
+        
+        let action = UIAlertAction(title: "Add item", style: .default) { (action) in
+            
+            print(textField.text!)
+            self.itemArray.append(textField.text!)
+            //enter append code
+            self.tableView.reloadData()
+            
+        
+        }
+
+        let cancel = UIAlertAction(title: "Cancel", style: .cancel) { (action) in
+            //TODO: enter dismiss code
+            
+        }
+        
+        
+        alert.addTextField { (alertTextField) in
+        alertTextField.placeholder = "todo description" // not necessary if no placeholder is needed. already tested
+        
+        textField = alertTextField
+        //TODO try adding more text fields to see what happens
+        
+        }
+        
+        alert.addAction(action)
+        alert.addAction(cancel)
+        
+       
+        
+        present(alert, animated: true, completion: nil)
+        
+    }
     
 
 }
