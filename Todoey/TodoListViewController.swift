@@ -11,10 +11,20 @@ import UIKit
 class TodoListViewController: UITableViewController {
 
     var itemArray = ["Find Mike","Buy Eggos","Destroy Demogogorgon"]
+   
+    //defining method for simple data persistence
+    let defaults = UserDefaults.standard
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        
+        //creating a reference for data persistence in app
+        if let items = UserDefaults.standard.array(forKey: "TodoListArray") as? [String] {
+            itemArray = items
+            
+        }
+        
     
     }
 
@@ -37,7 +47,6 @@ class TodoListViewController: UITableViewController {
         
        // print(itemArray[indexPath.row])
         //could be fun to try out:
-        //tableView.selectRow(at: <#T##IndexPath?#>, animated: <#T##Bool#>, scrollPosition: <#T##UITableView.ScrollPosition#>)
         
         if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
             tableView.cellForRow(at: indexPath)?.accessoryType = .none
@@ -62,32 +71,27 @@ class TodoListViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add item", style: .default) { (action) in
             
-            print(textField.text!)
             self.itemArray.append(textField.text!)
-            //enter append code
+            self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            
             self.tableView.reloadData()
             
-        
         }
 
         let cancel = UIAlertAction(title: "Cancel", style: .cancel) { (action) in
-            //TODO: enter dismiss code
-            
+            alert.dismiss(animated: true, completion: nil)
+
         }
-        
         
         alert.addTextField { (alertTextField) in
         alertTextField.placeholder = "todo description" // not necessary if no placeholder is needed. already tested
         
         textField = alertTextField
-        //TODO try adding more text fields to see what happens
         
         }
         
         alert.addAction(action)
         alert.addAction(cancel)
-        
-       
         
         present(alert, animated: true, completion: nil)
         
