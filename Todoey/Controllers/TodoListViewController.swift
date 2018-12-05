@@ -11,35 +11,18 @@ import UIKit
 class TodoListViewController: UITableViewController {
 
     var itemArray = [Item]()
-
-    //defining method for simple data persistence
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+   
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        //Creates a reference to the location for proper data storage. This is a singleton which is a globally accessible variable that will change each time you try to update it. right now we have only provided the path
         
-        let newItem = Item()
-        newItem.title = "Find Mike"
-        itemArray.append(newItem)
+        print(dataFilePath!)
         
-        let newItem2 = Item()
-        newItem2.title = "Buy Eggos"
-        itemArray.append(newItem2)
-        
-        let newItem3 = Item()
-        newItem3.title = "Destroy Demogogorgon"
-        itemArray.append(newItem3)
-        
-        //creating a reference for data persistence in app
-        //Commented out as it will crash as we have changed our datamodel
-//        if let items = UserDefaults.standard.array(forKey: "TodoListArray") as? [Item] {
-//            itemArray = items
-//
-//        }
-        
-        
-
+        loadItems()
+    
     }
 
     //MARK - Tableview Datasource Methods
@@ -52,7 +35,7 @@ class TodoListViewController: UITableViewController {
         
         cell.textLabel?.text = item.title
         
-        //Using the Ternary Operator below removing true as that is apparently redundant
+        //Using the Ternary Operator below. removing true as that is apparently redundant
         cell.accessoryType = item.done ? .checkmark:.none
         
         
@@ -69,7 +52,7 @@ class TodoListViewController: UITableViewController {
        //sets the opposite value for the specific selected row item. Only works because it is a boolean true or false
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
-        tableView.reloadData()
+        self.saveItems()
         
         tableView.deselectRow(at: indexPath, animated: true) //deselect the row to make sure that the row is not grey anymore
         
@@ -89,10 +72,7 @@ class TodoListViewController: UITableViewController {
             let newItem = Item()
             newItem.title = textField.text!
             self.itemArray.append(newItem)
-           //commented out as we have changed the data model and the app will now crash
-            // self.defaults.set(self.itemArray, forKey: "TodoListArray")
-            
-            self.tableView.reloadData()
+            self.saveItems()
             
         }
 
@@ -115,6 +95,42 @@ class TodoListViewController: UITableViewController {
         
     }
     
+    func saveItems() {
+        
+        //MARK: SAVING DATA TO THE CUSTOM PLIST
+        //Defines the encoder property
+        let encoder = PropertyListEncoder()
+        
+        //Defines the data and encodes it
+        do {
+            let data = try encoder.encode(self.itemArray)
+            try data.write(to: self.dataFilePath!)
+            print("Succes in encoding data!")
+        } catch {
+            print("Error encoding itemArray, \(error)")
+            
+        }
+        self.tableView.reloadData()
+        
+    }
+    
+    func loadItems() {
+        
+        
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+            itemArray = try decoder.decode([Item].self, from: data) //for [Item] we need to specify data type explictly as Xcode cannot infer this
+            } catch {
+            print("Error decoding data, \(error)")
+            }
+        self.tableView.reloadData() //not needed
+            
+        }
+        
+
+        
+    }
 
 }
 
