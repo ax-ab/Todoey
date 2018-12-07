@@ -7,26 +7,34 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
 
+    //MARK: - Declare initial properties
     var itemArray = [Item]()
+    //The other "old" way of saving data with a plist
+    //TODO: Delete dataFilePath reference from old version
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
-   
+    //defining context for core data. this is explained in lecture 236. bookmarked!
+    //The context can be viewed as the staging area for our data
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    
+    @IBOutlet weak var searchBar: UISearchBar!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         //Creates a reference to the location for proper data storage. This is a singleton which is a globally accessible variable that will change each time you try to update it. right now we have only provided the path
         
+        searchBar.delegate = self
         print(dataFilePath!)
         
         loadItems()
     
     }
 
-    //MARK - Tableview Datasource Methods
-    
+    //MARK: - Tableview Datasource Methods
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
@@ -38,7 +46,6 @@ class TodoListViewController: UITableViewController {
         //Using the Ternary Operator below. removing true as that is apparently redundant
         cell.accessoryType = item.done ? .checkmark:.none
         
-        
         return cell
     }
     
@@ -46,10 +53,15 @@ class TodoListViewController: UITableViewController {
         return itemArray.count
     }
     
-    //MARK - TableView Delegate Methods
+    //MARK: - TableView Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-       //sets the opposite value for the specific selected row item. Only works because it is a boolean true or false
+        //Deleting items in context and Array below for testing now which is why it is commented out.
+        //Very important is the order below as we have to remove the entry from the context first before we remove it from the itemArray
+//        context.delete(itemArray[indexPath.row])
+//        itemArray.remove(at: indexPath.row)
+        
+        //sets the opposite value for the specific selected row item. Only works because it is a boolean true or false
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
         self.saveItems()
@@ -58,9 +70,7 @@ class TodoListViewController: UITableViewController {
         
     }
 
-    //MARK: Add new items
-    
-    
+    //MARK: - Add new items with button
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         
         var textField = UITextField()
@@ -69,8 +79,11 @@ class TodoListViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add item", style: .default) { (action) in
             
-            let newItem = Item()
+
+            let newItem = Item(context: self.context)
+            
             newItem.title = textField.text!
+            newItem.done = false
             self.itemArray.append(newItem)
             self.saveItems()
             
@@ -95,42 +108,75 @@ class TodoListViewController: UITableViewController {
         
     }
     
+    //MARK: - Save and load data to/from Core Data
     func saveItems() {
         
-        //MARK: SAVING DATA TO THE CUSTOM PLIST
-        //Defines the encoder property
-        let encoder = PropertyListEncoder()
-        
-        //Defines the data and encodes it
         do {
-            let data = try encoder.encode(self.itemArray)
-            try data.write(to: self.dataFilePath!)
-            print("Succes in encoding data!")
+        try context.save()
+        print("Success saving context")
         } catch {
-            print("Error encoding itemArray, \(error)")
-            
+        print("Error saving context: \(error)")
         }
+        
         self.tableView.reloadData()
+    }
+    
+    //below we are defining a default value to go into the parameter which is the stuff that comes after =
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+        
+        //Specifies a request that simply fetches the whole database part for Item but we need to specify the data type <Item>. Commented out as we now use it as a default value for loadItems as per above
+        //let request:NSFetchRequest<Item> = Item.fetchRequest()
+        
+        do {
+            //Putting the fetch request inside itemArray
+            itemArray = try context.fetch(request)
+            } catch {
+                print("Error fetching data \(error)")
+            }
+        self.tableView.reloadData()
+
+    }
+    
+}
+
+//MARK: - searchBar functionality
+extension TodoListViewController: UISearchBarDelegate {
+   
+    //This button gets triggered once the user presses Search on the keyboard
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        
+        //So then our query becomes for all the items in the item array look for the ones where the title of the item contains this text (searchBar.text!).
+        let request:NSFetchRequest<Item> = Item.fetchRequest()
+        
+        //the [cd] below means that it is now NON-sensitive towards case and diacritics
+        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        
+        //Previosly
+//        let sortDescriptor = NSSortDescriptor(key:"title", ascending:true)
+//        request.sortDescriptors = [sortDescriptor]
+    
+        request.sortDescriptors = [NSSortDescriptor(key:"title", ascending:true)]
+
+        //here we previosly had the code from load items but instead we included the load item function to have a request as input.
+        loadItems(with: request)
+        
+        tableView.reloadData()
         
     }
     
-    func loadItems() {
-        
-        
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            do {
-            itemArray = try decoder.decode([Item].self, from: data) //for [Item] we need to specify data type explictly as Xcode cannot infer this
-            } catch {
-            print("Error decoding data, \(error)")
+    //Using the below to check whether the cross button was pressed by infering it through the below method.
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadItems()
+            
+            //Removes the keyboard from the view. Explained in lecture 244 bookmarked.
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
             }
-        self.tableView.reloadData() //not needed
             
         }
         
-
-        
     }
-
+    
+    
 }
-
