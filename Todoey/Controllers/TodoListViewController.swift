@@ -13,9 +13,13 @@ class TodoListViewController: UITableViewController {
 
     //MARK: - Declare initial properties
     var itemArray = [Item]()
-    //The other "old" way of saving data with a plist
-    //TODO: Delete dataFilePath reference from old version
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    //The variable below only gets a value if triggered through the segue defined in the Category viewcontroller prepare for Segue. this will be set with a specific entry in the array ( destinationVC.selectedCategory = categoryArray[indexPath.row] )
+    var selectedCategory: Category? {
+        didSet {
+            loadItems()
+        }
+    }
+    
     //defining context for core data. this is explained in lecture 236. bookmarked!
     //The context can be viewed as the staging area for our data
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
@@ -28,9 +32,9 @@ class TodoListViewController: UITableViewController {
         //Creates a reference to the location for proper data storage. This is a singleton which is a globally accessible variable that will change each time you try to update it. right now we have only provided the path
         
         searchBar.delegate = self
-        print(dataFilePath!)
         
-        loadItems()
+        //commented out because it will get called when we trigger the Segue from the previous viewController anyway
+        //loadItems()
     
     }
 
@@ -84,6 +88,7 @@ class TodoListViewController: UITableViewController {
             
             newItem.title = textField.text!
             newItem.done = false
+            newItem.parentCategory = self.selectedCategory //We make sure that it gets the proper parent category relevant to the todoey lists.
             self.itemArray.append(newItem)
             self.saveItems()
             
@@ -117,15 +122,42 @@ class TodoListViewController: UITableViewController {
         } catch {
         print("Error saving context: \(error)")
         }
-        
+       
         self.tableView.reloadData()
+        loadItems()
     }
     
-    //below we are defining a default value to go into the parameter which is the stuff that comes after =
-    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+    //below we are defining a default value to go into the parameter which is the stuff that comes after =. for the predicate it is simply nothing if nothing is parsed in.
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
         
         //Specifies a request that simply fetches the whole database part for Item but we need to specify the data type <Item>. Commented out as we now use it as a default value for loadItems as per above
-        //let request:NSFetchRequest<Item> = Item.fetchRequest()
+       // let request:NSFetchRequest<Item> = Item.fetchRequest()
+        
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
+        //the below makes sure that we only parse the additional predicate in case that the additional predicate is set. that is the predicate!
+        if let additionalPredicate = predicate {
+            
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
+            
+        } else {
+            
+            request.predicate = categoryPredicate
+            
+        }
+        
+       
+        let titleDescriptor = NSSortDescriptor(key:"title", ascending:true, selector:#selector(NSString.caseInsensitiveCompare(_:)))
+        
+        let doneDescriptor = NSSortDescriptor(key:"done", ascending:true, selector:#selector(NSString.caseInsensitiveCompare(_:)))
+        
+        request.sortDescriptors = [doneDescriptor, titleDescriptor]
+        
+//        request.sortDescriptors = [NSSortDescriptor(key:"title", ascending:true, selector:#selector(NSString.caseInsensitiveCompare(_:)))]
+        
+        
+        //request.predicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
         
         do {
             //Putting the fetch request inside itemArray
@@ -133,7 +165,9 @@ class TodoListViewController: UITableViewController {
             } catch {
                 print("Error fetching data \(error)")
             }
-        self.tableView.reloadData()
+        
+            self.tableView.reloadData()
+    
 
     }
     
@@ -146,27 +180,34 @@ extension TodoListViewController: UISearchBarDelegate {
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         
         //So then our query becomes for all the items in the item array look for the ones where the title of the item contains this text (searchBar.text!).
-        let request:NSFetchRequest<Item> = Item.fetchRequest()
+        //let request:NSFetchRequest<Item> = Item.fetchRequest()
         
         //the [cd] below means that it is now NON-sensitive towards case and diacritics
-        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+
         
         //Previosly
 //        let sortDescriptor = NSSortDescriptor(key:"title", ascending:true)
 //        request.sortDescriptors = [sortDescriptor]
     
-        request.sortDescriptors = [NSSortDescriptor(key:"title", ascending:true)]
+        //request.sortDescriptors = [NSSortDescriptor(key:"title", ascending:true)]
 
         //here we previosly had the code from load items but instead we included the load item function to have a request as input.
-        loadItems(with: request)
         
-        tableView.reloadData()
+        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        
+        loadItems(predicate: predicate)
+        
+        //My previous solution
+//        loadItems(predicate: NSPredicate(format: "title CONTAINS[cd] %@ AND parentCategory.name MATCHES %@", searchBar.text!, selectedCategory!.name!))
+        
+       // tableView.reloadData() //redundant as we already have this in loadItems?
         
     }
     
     //Using the below to check whether the cross button was pressed by infering it through the below method.
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchBar.text?.count == 0 {
+            
             loadItems()
             
             //Removes the keyboard from the view. Explained in lecture 244 bookmarked.
