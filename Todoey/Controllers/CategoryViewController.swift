@@ -7,18 +7,20 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class CategoryViewController: UITableViewController {
 
+    
     //MARK: - Declare initial properties
-    var categoryArray = [Category]()
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    let realm = try! Realm()
+    
+    var categoryArray: Results<Category>?
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        loadItems()
+        loadCategories()
         
     }
     
@@ -26,15 +28,18 @@ class CategoryViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
-        let category = categoryArray[indexPath.row]
-        
-        cell.textLabel?.text = category.name
+       
+        //Nil Coalescing Operator
+        cell.textLabel?.text = categoryArray?[indexPath.row].name ?? "No Categories Added Yet"
         
         return cell
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categoryArray.count
+        
+        //If categoryArray (an optional) is nil return 1
+        return categoryArray?.count ?? 1
+    
     }
     
     
@@ -50,7 +55,7 @@ class CategoryViewController: UITableViewController {
         let destinationVC = segue.destination as! TodoListViewController
         
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categoryArray[indexPath.row]
+            destinationVC.selectedCategory = categoryArray?[indexPath.row]
         }
         
     }
@@ -67,11 +72,13 @@ class CategoryViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add list", style: .default) { (UIAlertAction) in
             
-            let newCategory = Category(context: self.context)
+            let newCategory = Category()
             
             newCategory.name = textField.text!
-            self.categoryArray.append(newCategory)
-            self.saveItems()
+            
+            //Below can be deleted as Realm automatically updates the database by saving directly without having to use the Array
+            //self.categoryArray.append(newCategory)
+            self.save(category: newCategory)
             
         }
         let cancel = UIAlertAction(title: "Cancel", style: .cancel) { (UIAlertAction) in
@@ -92,10 +99,12 @@ class CategoryViewController: UITableViewController {
     }
     
     //MARK: - Save and load data to/from Core Data
-    func saveItems() {
+    func save(category: Category) {
         
         do {
-            try context.save()
+            try realm.write {
+                realm.add(category)
+            }
             print("Success saving context")
         } catch {
             print("Error saving context: \(error)")
@@ -103,20 +112,30 @@ class CategoryViewController: UITableViewController {
         
         self.tableView.reloadData()
         //Need the loaditems here in order to update the view properly when new data is added. should also be included in a refresh funtionality. commented out for now.
-        loadItems()
+        loadCategories()
     }
     
-    func loadItems(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
+    
+    //Legacy from coredata. can be deleted once working
+    func loadCategories() {
         
-        request.sortDescriptors = [NSSortDescriptor(key:"name", ascending:true, selector:#selector(NSString.caseInsensitiveCompare(_:)))]
+    categoryArray = realm.objects(Category.self)
         
-        do {
-            categoryArray = try context.fetch(request)
-        } catch {
-            print("Error fetching data \(error)")
-        }
-        self.tableView.reloadData()
-        
+    self.tableView.reloadData()
     }
+    
+    
+//    func loadItems(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
+//
+//        request.sortDescriptors = [NSSortDescriptor(key:"name", ascending:true, selector:#selector(NSString.caseInsensitiveCompare(_:)))]
+//
+//        do {
+//            categoryArray = try context.fetch(request)
+//        } catch {
+//            print("Error fetching data \(error)")
+//        }
+//        self.tableView.reloadData()
+//
+//    }
     
 }
