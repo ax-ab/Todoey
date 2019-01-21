@@ -8,8 +8,9 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class TodoListViewController: UITableViewController {
+class TodoListViewController: SwipeTableViewController {
 
     //MARK: - Declare initial properties
     var todoItems: Results<Item>?
@@ -24,37 +25,83 @@ class TodoListViewController: UITableViewController {
     
     @IBOutlet weak var searchBar: UISearchBar!
     
+    
+    //We put the new color of the navigation bar inside here instead of viewdidload because this get called after viewdid load and when the navigationcontroller does exist (not nil) in contrast to in viewdidload
+    override func viewWillAppear(_ animated: Bool) {
+        
+        title = selectedCategory?.name
+        
+        guard let colorHex = selectedCategory?.color else { fatalError() }
+        navBarUpdate(colorHex: colorHex)
+
+        guard let navBarColor = UIColor(hexString: colorHex) else { fatalError() }
+        searchBar.barTintColor = navBarColor
+        searchBar.layer.borderWidth = 1
+        searchBar.layer.borderColor = UIColor(hexString: colorHex)!.cgColor
+        
+    }
+    
+    override func willMove(toParent parent: UIViewController?) {
+        navBarUpdate(colorHex: "0A568C")
+    }
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         //Creates a reference to the location for proper data storage. This is a singleton which is a globally accessible variable that will change each time you try to update it. right now we have only provided the path
+       
         
-       searchBar.delegate = self
+        tableView.separatorStyle = .none
+        
+        searchBar.delegate = self
         
         //commented out because it will get called when we trigger the Segue from the previous viewController anyway
         //loadItems()
     
     }
 
+    //MARK: - Navbar update function
+    
+    func navBarUpdate(colorHex: String) {
+        
+        guard let navBar = navigationController?.navigationBar else { fatalError() }
+        guard let navBarColor = UIColor(hexString: colorHex) else { fatalError() }
+        
+        navBar.barTintColor = navBarColor
+        navBar.tintColor = ContrastColorOf(navBarColor, returnFlat: true)
+        navBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor : ContrastColorOf(navBarColor, returnFlat: true)]
+    
+    }
+    
+    
+    
     //MARK: - Tableview Datasource Methods
+    
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         if let item = todoItems?[indexPath.row] {
-            
+
             cell.textLabel?.text = item.title
-            
-            //Using the Ternary Operator below. removing true as that is apparently redundant
+            cell.detailTextLabel?.text = item.deadline
             cell.accessoryType = item.done ? .checkmark:.none
             
-        } else {
-            cell.textLabel?.text = "No Items Added"
+            //below example of optionally chaining
+            if let color = UIColor(hexString: selectedCategory!.color)?.darken(byPercentage: CGFloat(indexPath.row) / CGFloat(todoItems!.count)) {
+                
+                cell.backgroundColor = color
+                cell.textLabel?.textColor = ContrastColorOf(color, returnFlat: true)
+                cell.detailTextLabel?.textColor = ContrastColorOf(color, returnFlat: true)
+                cell.tintColor = ContrastColorOf(color, returnFlat: true)
+                
+            }
+            
         }
-        
 
-        
         return cell
+        
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -126,14 +173,91 @@ class TodoListViewController: UITableViewController {
         
     }
     
-    //MARK: - Save and load data to/from Realm
+    //MARK: - Load data from Realm. Save is done locally above
     
     func loadItems() {
         
-
         todoItems = selectedCategory?.items.sorted(byKeyPath: "dateCreated", ascending: false)
         
         self.tableView.reloadData()
+    }
+    
+    //MARK: - Delete from Realm
+    override func updateModel(at indexPath: IndexPath) {
+        
+        if let itemForDeletion = self.todoItems?[indexPath.row] {
+            
+            do {
+                try self.realm.write {
+                    self.realm.delete(itemForDeletion)
+                }
+            } catch {
+                print("Error deleting from Realm: \(error)")
+            }
+        }
+        //Below is commented out as swipecellkit does this automatically and that is why it conflicts
+        //tableView.reloadData()
+    }
+    
+    //MARK: - Rename in Realm
+    override func renameEntry(at indexPath: IndexPath) {
+        
+        if let itemForRenaming = self.todoItems?[indexPath.row] {
+            
+            var textField = UITextField()
+            let alert = UIAlertController(title: "Rename title", message: "Type new title for \(itemForRenaming.title)", preferredStyle: .alert)
+            
+            let action = UIAlertAction(title: "Rename", style: .default) { (UIAlertAction) in
+                
+                do {
+                    try self.realm.write {
+                        itemForRenaming.title = textField.text!
+                    }
+                } catch {
+                    print("Error renaming in Realm: \(error)")
+                }
+                self.tableView.reloadData()
+                
+            }
+            
+            let cancel = UIAlertAction(title: "Cancel", style: .cancel) { (UIAlertAction) in
+                alert.dismiss(animated: true, completion: nil)
+            }
+            
+            alert.addTextField { (alertTextField) in
+                alertTextField.placeholder = itemForRenaming.title
+                
+                textField = alertTextField //Important. we do this to make a reference to the textfield so we can parse whatever is in on to the list. It is used specifically up in the action constant above. If we dont use it then the data will not get parsed as there is no link between the 2.
+            }
+            
+            alert.addAction(action)
+            alert.addAction(cancel)
+            
+            present(alert, animated: true, completion: nil)
+            
+            
+        }
+        
+    }
+    
+    //MARK: - set deadline
+    override func setDeadline(_ data: String,_ indexPath:IndexPath) {
+
+        if let itemForSettingDeadline = self.todoItems?[indexPath.row] {
+
+        print("Successfully parsed in \(data)")
+        print("Successfully parsed in \(indexPath)")
+
+        do {
+            try self.realm.write {
+                itemForSettingDeadline.deadline = data
+            }
+        } catch {
+            print("Error setting deadline in Realm: \(error)")
+        }
+        self.tableView.reloadData()
+
+        }
     }
     
     

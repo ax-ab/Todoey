@@ -16,6 +16,8 @@
 		F003BC2F21BAAF3600D2B71E /* CategoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F003BC2E21BAAF3600D2B71E /* CategoryViewController.swift */; };
 		F003BC9D21C2B89700D2B71E /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = F003BC9C21C2B89700D2B71E /* Item.swift */; };
 		F003BC9F21C2B91000D2B71E /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = F003BC9E21C2B91000D2B71E /* Category.swift */; };
+		F016035221F081F400F58E30 /* SwipeTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F016035121F081F400F58E30 /* SwipeTableViewController.swift */; };
+		F0BA841221F5C4FF003FBC9D /* DatePickerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0BA841121F5C4FF003FBC9D /* DatePickerViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +34,8 @@
 		F003BC2E21BAAF3600D2B71E /* CategoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryViewController.swift; sourceTree = "<group>"; };
 		F003BC9C21C2B89700D2B71E /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
 		F003BC9E21C2B91000D2B71E /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
+		F016035121F081F400F58E30 /* SwipeTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeTableViewController.swift; sourceTree = "<group>"; };
+		F0BA841121F5C4FF003FBC9D /* DatePickerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatePickerViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -107,7 +111,9 @@
 			isa = PBXGroup;
 			children = (
 				F003BC2E21BAAF3600D2B71E /* CategoryViewController.swift */,
+				F016035121F081F400F58E30 /* SwipeTableViewController.swift */,
 				F003BBF421B6AE8000D2B71E /* TodoListViewController.swift */,
+				F0BA841121F5C4FF003FBC9D /* DatePickerViewController.swift */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -229,15 +235,19 @@
 			);
 			inputPaths = (
 				"${SRCROOT}/Pods/Target Support Files/Pods-Todoey/Pods-Todoey-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/ChameleonFramework/ChameleonFramework.framework",
 				"${BUILT_PRODUCTS_DIR}/Realm/Realm.framework",
 				"${BUILT_PRODUCTS_DIR}/RealmSwift/RealmSwift.framework",
+				"${BUILT_PRODUCTS_DIR}/SwipeCellKit/SwipeCellKit.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ChameleonFramework.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Realm.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RealmSwift.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SwipeCellKit.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -253,8 +263,10 @@
 			files = (
 				F003BC9D21C2B89700D2B71E /* Item.swift in Sources */,
 				F003BC2F21BAAF3600D2B71E /* CategoryViewController.swift in Sources */,
+				F0BA841221F5C4FF003FBC9D /* DatePickerViewController.swift in Sources */,
 				F003BBF521B6AE8000D2B71E /* TodoListViewController.swift in Sources */,
 				F003BBF321B6AE8000D2B71E /* AppDelegate.swift in Sources */,
+				F016035221F081F400F58E30 /* SwipeTableViewController.swift in Sources */,
 				F003BC9F21C2B91000D2B71E /* Category.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -403,6 +415,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 44R5PSYNJR;
 				INFOPLIST_FILE = Todoey/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -421,6 +434,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 44R5PSYNJR;
 				INFOPLIST_FILE = Todoey/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
